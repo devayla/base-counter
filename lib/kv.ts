@@ -30,3 +30,19 @@ export async function deleteUserNotificationDetails(
 ): Promise<void> {
   await redis.del(getUserNotificationDetailsKey(fid));
 }
+
+// Leaderboard Caching
+const LEADERBOARD_CACHE_KEY = 'leaderboard_top_100';
+
+export async function getCachedLeaderboard(): Promise<any[] | null> {
+  return await redis.get<any[]>(LEADERBOARD_CACHE_KEY);
+}
+
+export async function setCachedLeaderboard(data: any[]): Promise<void> {
+  // Cache for 5 minutes
+  await redis.set(LEADERBOARD_CACHE_KEY, data, { ex: 300 });
+}
+
+export async function invalidateLeaderboardCache(): Promise<void> {
+  await redis.del(LEADERBOARD_CACHE_KEY);
+}

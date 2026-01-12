@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
+import { invalidateLeaderboardCache } from '@/lib/kv';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,10 +54,10 @@ export async function POST(request: NextRequest) {
       { upsert: true }
     );
 
-    console.log('✅ Leaderboard updated for FID:', body.fid, {
-      totalIncrements: body.totalIncrements,
-      totalRewards: body.totalRewards,
-    });
+    // Invalidate the leaderboard cache so the next request gets fresh data
+    await invalidateLeaderboardCache();
+
+    console.log('✅ Leaderboard updated and cache invalidated for FID:', body.fid);
 
     return NextResponse.json({ success: true });
   } catch (error) {
