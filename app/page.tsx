@@ -24,10 +24,10 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     },
   }
   return {
-    title: 'Base Counter',
+    title: 'Base Counter | Global On-Chain Clicker',
     openGraph: {
-      title: 'Base Counter',
-      description: 'Increment the Base counter',
+      title: 'Base Counter | Global On-Chain Clicker',
+      description: 'Join the community! Increment the global counter, compete on the leaderboard, and earn rewards on Base.',
       images: [{ url: imageUrl }],
     },
     other: {
