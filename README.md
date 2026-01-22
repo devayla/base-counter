@@ -644,8 +644,12 @@ The following backend optimizations have been implemented to ensure the applicat
 - **Dynamic Projects**: Optimized the leaderboard query to only return `fid`, `username`, `imageUrl`, `totalIncrements`, and `totalRewards`.
 
 ### 🛡️ Security & Performance
-- **Optimized Verification**: Address verification logic was streamlined to use high-performance lookup patterns.
-- **Improved Neynar API Handling**: Added better caching and error handling for Farcaster user data lookups.
+- **Strict Input Validation**: Implemented `Zod` schema validation for all API endpoints (Signatures, Leaderboard, IPFS). This prevents malformed data from reaching the database or smart contract logic.
+- **Robust Address Verification**: Enhanced the `verifyAddressForFid` security check to strictly validate that the calling wallet is associated with the provided Farcaster ID using Neynar's lookup service. This prevents unauthorized leaderboard updates and reward claims.
+- **Optimized Verification**: Address verification logic was streamlined with a multi-layered lookup pattern (Custody address → Primary address → Verified addresses list → Legacy verifications).
+- **Neynar API Round-Robin**: Implemented a round-robin key rotation for Neynar API calls to handle high traffic and avoid rate limits.
+- **Reliable User Caching**: Standardized user data caching across all services, ensuring sub-millisecond lookups for common user profiles while maintaining data freshness.
+- **Standardized Error Handling**: Improved API response consistency with descriptive error messages and appropriate HTTP status codes (400 for validation, 403 for security, etc.).
 
 ### 🔍 SEO & Metadata
 - **Enhanced Open Graph**: Updated meta tags with premium descriptions and titles to improve click-through rates on social platforms.

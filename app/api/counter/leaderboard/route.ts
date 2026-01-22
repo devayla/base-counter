@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getDatabase } from '@/lib/mongodb';
 import { getCachedLeaderboard, setCachedLeaderboard } from '@/lib/kv';
 
 export const dynamic = 'force-dynamic';
+
+const querySchema = z.object({
+  limit: z.coerce.number().int().positive().max(500).default(100),
+  cache: z.enum(['true', 'false']).optional().default('true'),
+});
 
 interface LeaderboardEntry {
   fid: number;
@@ -17,10 +23,19 @@ interface LeaderboardEntry {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '100', 10);
-    const useCache = searchParams.get('cache') !== 'false';
+    const parsed = querySchema.safeParse(Object.fromEntries(searchParams));
 
-    // Try to get from cache first if limit is 100 (default)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
+    const { limit, cache } = parsed.data;
+    const useCache = cache === 'true';
+
+    // Try to get from cache first if default limit
     if (useCache && limit === 100) {
       const cachedData = await getCachedLeaderboard();
       if (cachedData) {
@@ -36,7 +51,7 @@ export async function GET(request: NextRequest) {
     const db = await getDatabase();
     const collection = db.collection<LeaderboardEntry>('counter_leaderboard');
 
-    // Get top users sorted by total increments (descending)
+    // Get top users sorted by total increments
     const leaderboard = await collection
       .find({})
       .sort({ totalIncrements: -1 })
@@ -51,7 +66,7 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
 
-    const formattedLeaderboard = leaderboard.map((entry) => ({
+    const formattedLeaderboard = leaderboard.map((entry: LeaderboardEntry) => ({
       fid: entry.fid,
       username: entry.username,
       imageUrl: entry.imageUrl,
@@ -60,7 +75,7 @@ export async function GET(request: NextRequest) {
       totalRewards: entry.totalRewards,
     }));
 
-    // Cache the result if it's the default limit
+    // Cache the result if default limit
     if (limit === 100) {
       await setCachedLeaderboard(formattedLeaderboard);
       console.log('💾 Leaderboard cached to Redis');
@@ -74,7 +89,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch leaderboard' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
